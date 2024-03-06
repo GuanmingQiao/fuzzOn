@@ -155,7 +155,11 @@ pub trait HasFavored {
         templates: Vec<ExploitTemplate>,
     );
     // Returns if current run has favored signatures
-    fn has_favored(&self) -> bool;
+    fn has_favored_signatures(&self) -> bool;
+
+    // Returns if current run has favored sequences
+    fn has_favored_sequence(&self) -> bool;
+
     // Returns whether a signature is favored
     fn is_favored_signature (
         &mut self,
@@ -916,8 +920,12 @@ impl<VI, VS, Loc, Addr, Out, CI> HasFavored for FuzzState<VI, VS, Loc, Addr, Out
             }
         }
     }
-    fn has_favored(&self) -> bool {
-        !self.favored_signatures.is_empty() || !self.favored_contracts.is_empty() || !self.sequenced_signatures.is_empty()
+    fn has_favored_signatures(&self) -> bool {
+        !self.favored_signatures.is_empty() || !self.favored_contracts.is_empty()
+    }
+
+    fn has_favored_sequence(&self) -> bool {
+        !self.sequenced_signatures.is_empty()
     }
 
     // Returns whether a signature is favored

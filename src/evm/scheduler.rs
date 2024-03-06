@@ -321,7 +321,7 @@ where
                 .unwrap_or_else(|| state.corpus().first().unwrap());
             self.set_current_scheduled(state, Some(id))?;
             // 95% chance to check favored if has favored
-            if state.has_favored() && state.rand_mut().below(100) < 95 {
+            if state.has_favored_signatures() && state.rand_mut().below(100) < 95 {
                 //debug!("Currently scheduled corpus ID: {}", id.clone().to_string());
                 let current_input = state.corpus().get(id).unwrap().clone().into_inner().input().clone();
                 //debug!("Currently scheduled input: {}", serde_json::to_string(&current_input.clone().unwrap()).unwrap());
@@ -459,7 +459,7 @@ where
         //debug!("Computing power score for input state with previous trace: {:?}", serde_json::to_string(&prev_inputs));
 
 
-        if state.has_favored() {
+        if state.has_favored_sequence() {
             // Do longest common subsequence
             let mut current = prev_inputs.clone();
             match entry.input().clone().unwrap().get_data_abi() {

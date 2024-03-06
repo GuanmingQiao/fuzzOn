@@ -621,6 +621,10 @@ where
                     .join("\n");
 
                 println!("\n\n\n😊😊 Found vulnerabilities! \n\n");
+                #[cfg(feature = "print_txn_corpus")]
+                {
+                    println!("{}", format!("Vulnerable corpus at: {}_input_corpus_origin", unsafe { DUMP_INPUT_FILE_COUNT }));
+                }
                 let cur_report =
                     format!(
                     "================ Description ================\n{}\n================ Trace ================\n{}\n",
@@ -633,7 +637,7 @@ where
 
                 solution::generate_test(cur_report.clone(), minimized);
 
-                let vuln_file = format!("{}/vuln_info.jsonl", self.work_dir.as_str());
+                let vuln_file = format!("{}/vuln_info.json", self.work_dir.as_str());
                 let mut f = OpenOptions::new()
                     .create(true)
                     .append(true)
