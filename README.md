@@ -1,89 +1,54 @@
-# 🍦 ItyFuzz
-![Demo](https://ityfuzz.assets.fuzz.land/demo-out.png)
+Algorithm optimization experiments of state-of-the-art EVM fuzzer Ityfuzz [\[Link\]](https://docs.ityfuzz.rs)
 
-[\[Docs\]](https://docs.ityfuzz.rs) /
-[\[Research Paper\]](https://dl.acm.org/doi/pdf/10.1145/3597926.3598059) / 
-[\[Twitter\]](https://twitter.com/hackthedefi) / 
-[\[Discord\]](https://discord.com/invite/qQa436VEwt) / 
-[\[Telegram\]](https://t.me/fuzzland) 
-
-
-
-ItyFuzz is a blazing-fast EVM and MoveVM smart contract hybrid fuzzer that combines symbolic execution and fuzzing to find bugs in smart contracts offchain and onchain. 
-
-## Install
-```
-curl -L https://ity.fuzz.land/ | bash
-ityfuzzup
-```
-
-## Example
-#### Fuzzing Deployed Smart Contract
-
-Generating full exploit to steal funds from a [contract](https://polygonscan.com/address/0x5d6c48f05ad0fde3f64bab50628637d73b1eb0bb) with flashloan + read-only reentrancy vulnerability on Polygon.
-
+## Steps to Build:
+1. Checkout branch `gmq_edg_exp`
+2. Navigate to cargo root
 ```bash
-# Fork Polygon at block 35718198 and fuzz the contract
-ETH_RPC_URL=https://polygon-rpc.com ityfuzz evm\
-    -t 0xbcf6e9d27bf95f3f5eddb93c38656d684317d5b4,0x5d6c48f05ad0fde3f64bab50628637d73b1eb0bb\
-    -c polygon\
-    --flashloan\
-    --onchain-block-number 35718198\
-    --onchain-etherscan-api-key TR24XDQF35QCNK9PZBV8XEH2XRSWTPWFWT # <-- Get your own API key at https://polygonscan.com/apis if this one is rate limited 
+cd .${Your Work Directory}/fuzzOn
 ```
-
-#### Foundry Invariant Test
-Run a Foundry invariant test defined in `Invariant` contract in `test/Invariant.sol`.
-
-```bash
-# Replaces: forge test --mc test/Invariant.sol:Invariant
-ityfuzz evm -m test/Invariant.sol:Invariant -- forge test
-```
-
-For other examples and usages, check out the [docs](https://docs.ityfuzz.rs).
+3. Scheduler Experiments:
+   1. Build project with `use_favored` flag enabled
+      ```bash
+      cargo build --features "cmp dataflow evm print_txn_corpus full_trace force_cache use_favored" --no-default-features
+      ```
+   2. Run projects from CLI
+      1. Favored function sequence + favored function signatures
+         1. AES
+             ```bash
+             ./target/release/ityfuzz evm -t 0x55d398326f99059fF775485246999027B3197955,0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3,0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907 -c bsc --onchain-block-number 23695904 -f --onchain-etherscan-api-key HZF74EH51PK2W1N84BE6W8YYATDP6UEFC2 --favored-file-path ./tests/presets/favored_sigs_aes.json
+             ```
+         2. BGLD
+            ```bash
+            ./target/release/ityfuzz evm -t 0x55d398326f99059fF775485246999027B3197955,0xE445654F3797c5Ee36406dBe88FBAA0DfbdDB2Bb,0x429339fa7A2f2979657B25ed49D64d4b98a2050d,0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c,0xC2319E87280c64e2557a51Cb324713Dd8d1410a3,0x169f715CaE1F94C203366a6890053E817C767B7C,0x559D0deAcAD259d970f65bE611f93fCCD1C44261,0x7526cC9121Ba716CeC288AF155D110587e55Df8b,0x0fe261aeE0d1C4DFdDee4102E82Dd425999065F4,0xC632F90affeC7121120275610BF17Df9963F181c -c bsc --onchain-block-number 23844529 -f --onchain-etherscan-api-key QY1M8Y2SX1J2MGY58H54IVRV9MEII1MT5D --favored-file-path ./tests/presets/favored_sigs_bgld.json
+            ```
+         3. NOVO
+            ```bash
+            ./target/release/ityfuzz evm -t 0xEeBc161437FA948AAb99383142564160c92D2974,0xa0787daad6062349f63b7c228cbfd5d8a3db08f1,0x3463a663de4ccc59c8b21190f81027096f18cf2a,0x6Fb2020C236BBD5a7DDEb07E14c9298642253333,0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c,0x128cd0Ae1a0aE7e67419111714155E1B1c6B2D8D -c bsc --onchain-block-number 18225002 -f --onchain-etherscan-api-key HZF74EH51PK2W1N84BE6W8YYATDP6UEFC2 --favored-file-path ./tests/presets/favored_sigs_novo.json
+            ```
+         4. YYDS
+            ```bash
+            ./target/release/ityfuzz evm -t 0x55d398326f99059fF775485246999027B3197955,0x970A76aEa6a0D531096b566340C0de9B027dd39D,0xB19463ad610ea472a886d77a8ca4b983E4fAf245,0xd5cA448b06F8eb5acC6921502e33912FA3D63b12,0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c,0xe70cdd37667cdDF52CabF3EdabE377C58FaE99e9 -c bsc --onchain-block-number 21157025 -f --onchain-etherscan-api-key HZF74EH51PK2W1N84BE6W8YYATDP6UEFC2 --favored-file-path ./tests/presets/favored_sigs_yyds.json
+            ```
+      2. Favored function signatures only: remove the `calls` field from `./tests/presets/favored_sigs_{project}.json`
+   3. Run projects from IDE
+      1. Favored function sequence + favored function signatures
+         1. AES
+            ```
+            run  --features "cmp dataflow evm print_txn_corpus full_trace force_cache use_favored" --no-default-features  --  evm -t 0x55d398326f99059fF775485246999027B3197955,0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3,0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907 -c bsc --onchain-block-number 23695904 -f --onchain-etherscan-api-key HZF74EH51PK2W1N84BE6W8YYATDP6UEFC2 --favored-file-path ./tests/presets/favored_sigs_aes.json
+            ```
+         2. BGLD
+            ```
+            run  --features "cmp dataflow evm print_txn_corpus full_trace force_cache use_favored" --no-default-features  --  evm -t 0x55d398326f99059fF775485246999027B3197955,0xE445654F3797c5Ee36406dBe88FBAA0DfbdDB2Bb,0x429339fa7A2f2979657B25ed49D64d4b98a2050d,0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c,0xC2319E87280c64e2557a51Cb324713Dd8d1410a3,0x169f715CaE1F94C203366a6890053E817C767B7C,0x559D0deAcAD259d970f65bE611f93fCCD1C44261,0x7526cC9121Ba716CeC288AF155D110587e55Df8b,0x0fe261aeE0d1C4DFdDee4102E82Dd425999065F4,0xC632F90affeC7121120275610BF17Df9963F181c -c bsc --onchain-block-number 23844529 -f --onchain-etherscan-api-key QY1M8Y2SX1J2MGY58H54IVRV9MEII1MT5D --favored-file-path ./tests/presets/favored_sigs_bgld.json
+            ```
+         3. NOVO
+            ```
+            run  --features "cmp dataflow evm print_txn_corpus full_trace force_cache use_favored" --no-default-features  -- evm -t 0xEeBc161437FA948AAb99383142564160c92D2974,0xa0787daad6062349f63b7c228cbfd5d8a3db08f1,0x3463a663de4ccc59c8b21190f81027096f18cf2a,0x6Fb2020C236BBD5a7DDEb07E14c9298642253333,0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c,0x128cd0Ae1a0aE7e67419111714155E1B1c6B2D8D -c bsc --onchain-block-number 18225002 -f --onchain-etherscan-api-key HZF74EH51PK2W1N84BE6W8YYATDP6UEFC2 --favored-file-path ./tests/presets/favored_sigs_novo.json
+            ```
+         4. YYDS
+            ```
+            run  --features "cmp dataflow evm print_txn_corpus full_trace force_cache use_favored" --no-default-features  -- evm -t 0x55d398326f99059fF775485246999027B3197955,0x970A76aEa6a0D531096b566340C0de9B027dd39D,0xB19463ad610ea472a886d77a8ca4b983E4fAf245,0xd5cA448b06F8eb5acC6921502e33912FA3D63b12,0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c,0xe70cdd37667cdDF52CabF3EdabE377C58FaE99e9 -c bsc --onchain-block-number 21157025 -f --onchain-etherscan-api-key HZF74EH51PK2W1N84BE6W8YYATDP6UEFC2 --favored-file-path ./tests/presets/favored_sigs_yyds.json
+            ```
+      2. Favored function signatures only: remove the `calls` field from `./tests/presets/favored_sigs_{project}.json`
+4. Mutator Experiments:
 
 ## Performance
-On large real-world smart contract projects, ItyFuzz finds 126 vulnerabilities while Echidna finds 0 and Mythril finds 9. For details, refer to [backtesting](https://docs.ityfuzz.rs/tutorials/exp-known-working-hacks), [research paper](https://dl.acm.org/doi/pdf/10.1145/3597926.3598059), and [new bugs discovered](#bugs-found).
-
-On small real-world smart contracts (ERC20, lottery, etc.), ItyFuzz gains 10% more test coverage than academia state-of-the-art fuzzer SMARTIAN using 1/30 of the time.
-<p align="middle">
-    <img src="https://ityfuzz.assets.fuzz.land/ityfuzz3.png" width="49%">
-    <img src="https://ityfuzz.assets.fuzz.land/ityfuzz1.png" width="49%">
-</p>
-
-On Consensys's [Daedaluzz](https://github.com/Consensys/daedaluzz) benchmark, ItyFuzz *without symbolic execution* finds 44% more bugs than Echidna and 31% more bugs than Foundry. ItyFuzz is also 2.5x faster than Echidna and 1.5x faster than Foundry.
-
-<p align="middle">
-    <img src="https://ityfuzz.assets.fuzz.land/daedaluzz-bar.jpeg" width="49%">
-    <img src="https://ityfuzz.assets.fuzz.land/FvRIuhfWwAEdBBz.jpg" width="49%">
-</p>
-
-## Features
-
-* **Chain forking** to fuzz contracts on any chain at any block number.
-* **Accurate exploit generation** for precision loss, integer overflow, fund stealing, Uniswap pair misuse etc.
-* **Reentrancy support** to concretely leverage potential reentrancy opportunities for exploring more code paths.
-* **Blazing fast power scheduling** to prioritize fuzzing on code that is more likely to have bugs.
-* **Symbolic execution** to generate test cases that cover more code paths than fuzzing alone.
-* **Flashloan support** assuming attackers have infinite funds to exploit flashloan vulnerabilities.
-* **Liquidation support** to simulate buying and selling any token from liquidity pools during fuzzing.
-* **Decompilation support** for fuzzing contracts without source code.
-* **Supports complex contracts initialization** using Foundry setup script, forking Anvil RPC, or providing a JSON config file.
-* Backed by SOTA Web2 fuzzing engine [LibAFL](https://github.com/AFLplusplus/LibAFL).
-
-## Bugs Found
-
-Selected new vulnerabilities found:
-
-| Project | Vulnerability | Assets at Risks |
-| --- | --- | --- |
-| BSC $rats NFT | Integer overflow leading to unlimited minting | $79k |
-| 9419 Token | Incorrect logic leading to price manipulation | $35k |
-| BSC Mevbot | Unguarded DPPFlashLoanCall | $19k |
-| FreeCash | Incorrect logic leading to price manipulation | $12k |
-| 0xnoob Token | Incorrect logic leading to price manipulation | $7k |
-| Baby Wojak Token | Incorrect logic leading to price manipulation | $4k |
-| Arrow | Incorrect position logic leading to fund loss | Found During Audit |
-
-ItyFuzz can automatically generate exploits for >80% of previous hacks without any knowledge of the hack. 
-Refer to [backtesting](https://docs.ityfuzz.rs/tutorials/exp-known-working-hacks) for running previously hacked protocols.
