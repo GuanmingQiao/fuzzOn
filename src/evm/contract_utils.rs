@@ -19,6 +19,7 @@ use serde_json::Value;
 
 use crate::{
     evm::{
+        tokens::constant_pair::ConstantPairMetadata,
         types::{fixed_address, generate_random_address, EVMAddress, EVMFuzzState},
         vm::{IN_DEPLOY, SETCODE_ONLY},
     },
@@ -30,7 +31,7 @@ extern crate crypto;
 
 use revm_interpreter::opcode::PUSH4;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use self::crypto::{digest::Digest, sha3::Sha3};
 use super::{
@@ -128,6 +129,10 @@ pub struct SetupData {
     pub target_contracts: Vec<EVMAddress>,
     pub target_senders: Vec<EVMAddress>,
     pub target_selectors: HashMap<EVMAddress, Vec<Vec<u8>>>,
+
+    // Flashloan specific
+    pub v2_pairs: Vec<EVMAddress>,
+    pub constant_pairs: Vec<ConstantPairMetadata>,
 }
 
 pub fn set_hash(name: &str, out: &mut [u8]) {
@@ -731,23 +736,63 @@ impl ContractLoader {
         }
 
         let mut all_slugs = vec![];
-        let mut found = false;
+        let mut all_matched_slugs = vec![];
         let mut setup_data = None;
+        for artifact in offchain_artifacts {
+            for ((filename, contract_name), contract_artifact) in &artifact
+                .contracts
+                .iter()
+                .filter(|((s, _), _)| !s.starts_with("lib/") && !s.starts_with("hardhat/"))
+                .collect::<Vec<_>>()
+            {
+                let slug = format!("{filename}:{contract_name}");
+                all_slugs.push(slug.clone());
+
+                if slug.contains(&setup_file) {
+                    all_matched_slugs.push(slug.clone());
+                }
+            }
+        }
+
+        if all_matched_slugs.is_empty() {
+            let all_files = all_slugs
+                .iter()
+                .map(|s| format!("- {}", s))
+                .collect::<Vec<String>>()
+                .join("\n");
+            panic!(
+                "Deployment script {} not found. Available contracts: \n{}",
+                setup_file, all_files
+            );
+        } else if all_matched_slugs.len() > 1 {
+            let all_files = all_matched_slugs
+                .iter()
+                .map(|s| format!("- {}", s))
+                .collect::<Vec<String>>()
+                .join("\n");
+            panic!(
+                "More than one contract found matching the provided deployment script pattern {}: \n{}",
+                setup_file, all_files
+            );
+        }
+
+        let setup_file = all_matched_slugs[0].clone();
+
         'artifacts: for artifact in offchain_artifacts {
             for ((filename, contract_name), contract_artifact) in &artifact.contracts {
                 let slug = format!("{filename}:{contract_name}");
                 all_slugs.push(slug.clone());
-                if slug == setup_file {
-                    found = true;
-                    setup_data = Some(Self::call_setup(contract_artifact.deploy_bytecode.clone(), work_dir));
 
+                if slug.contains(&setup_file) {
+                    setup_data = Some(Self::call_setup(
+                        contract_artifact.deploy_bytecode.clone(),
+                        work_dir.clone(),
+                    ));
                     break 'artifacts;
                 }
             }
         }
-        if !found {
-            panic!("Contract not found. Available contracts: {:?}", all_slugs);
-        }
+
         for (addr, code) in setup_data.clone().unwrap().code {
             let (artifact_idx, slug) = Self::find_contract_artifact(code.to_vec(), offchain_artifacts);
 
@@ -844,7 +889,9 @@ impl ContractLoader {
             &mut state,
         );
 
-        assert!(res[0].1, "setUp() failed");
+        if !res[0].1 {
+            info!("setUp() failed: {:?}", res[0].0);
+        }
 
         // now get Foundry invariant test config by calling
         // * excludeContracts() => array of addresses
@@ -864,6 +911,8 @@ impl ContractLoader {
             (deployer, deployed_addr, abi_sig!("targetContracts")),
             (deployer, deployed_addr, abi_sig!("targetSenders")),
             (deployer, deployed_addr, abi_sig!("targetSelectors")),
+            (deployer, deployed_addr, abi_sig!("v2Pairs")),
+            (deployer, deployed_addr, abi_sig!("constantPairs")),
         ];
 
         let (res, _) = evm_executor.fast_call(&calls, &new_vm_state, &mut state);
@@ -873,6 +922,7 @@ impl ContractLoader {
             SETCODE_ONLY = false;
         }
 
+        // (address)[]
         macro_rules! parse_nth_result_addr {
             ($nth: expr) => {{
                 let (res_bys, succ) = res[$nth].clone();
@@ -973,6 +1023,15 @@ impl ContractLoader {
             map
         };
 
+        let v2_pairs = parse_nth_result_addr!(5);
+
+        // (address, address, uint256)[]
+        let constant_pairs = if res[6].1 {
+            ConstantPairMetadata::from_return_data(&res[6].0)
+        } else {
+            vec![]
+        };
+
         // get the newly deployed code by setUp()
         let code: HashMap<EVMAddress, Bytes> = evm_executor
             .host
@@ -990,6 +1049,8 @@ impl ContractLoader {
             target_contracts,
             target_senders,
             target_selectors,
+            v2_pairs,
+            constant_pairs,
         }
     }
 }
