@@ -284,6 +284,11 @@ pub struct EvmArgs {
     #[arg(long, default_value = "")]
     favored_file_path: String,
 
+    /// Reachability file. If specified, will load the statically-derive reachability rules
+    #[cfg(feature = "reachability_check")]
+    #[arg(long, default_value = "")]
+    reachability_file_path: String,
+
     #[arg(long, default_value = "")]
     base_directory: String,
 
@@ -757,6 +762,8 @@ pub fn evm_main(mut args: EvmArgs) {
         preset_file_path: args.preset_file_path,
         #[cfg(feature = "use_favored")]
         favored_file_path: args.favored_file_path,
+        #[cfg(feature = "reachability_check")]
+        reachability_file_path: args.reachability_file_path,
         load_corpus: args.load_corpus,
     };
 

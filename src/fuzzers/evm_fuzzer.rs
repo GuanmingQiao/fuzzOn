@@ -69,6 +69,7 @@ use crate::{
     scheduler::SortedDroppingScheduler,
     state::{FuzzState, HasCaller, HasExecutionResult, HasPresets, HasFavored},
 };
+use crate::evm::presets::ReachabilityTemplate;
 use crate::power_sched::PowerMutationalStageWithId;
 
 #[allow(clippy::type_complexity)]
@@ -259,6 +260,12 @@ pub fn evm_fuzzer(
     {
         let favored_templates = ExploitTemplate::from_filename(config.favored_file_path.clone());
         state.init_favored(favored_templates.clone());
+    }
+
+    #[cfg(feature = "reachability_check")]
+    {
+        let reachablility_templates = ReachabilityTemplate::from_filename(config.reachability_file_path.clone());
+        state.init_reachablility(reachablility_templates.clone());
     }
 
     let cov_middleware = Rc::new(RefCell::new(Coverage::new(

@@ -93,6 +93,8 @@ pub struct Config<VS, Addr, Code, By, Loc, SlotTy, Out, I, S, CI, E> {
     pub preset_file_path: String,
     #[cfg(feature = "use_favored")]
     pub favored_file_path: String,
+    #[cfg(feature = "reachability_check")]
+    pub reachability_file_path: String
 }
 
 impl<VS, Addr, Code, By, Loc, SlotTy, Out, I, S, CI, E> Debug

@@ -5,6 +5,7 @@ use std::{
     path::Path,
     time::Duration,
 };
+use std::f32::INFINITY;
 
 // Some components are used when `evaluation` feature is disabled
 #[allow(unused_imports)]
@@ -36,12 +37,14 @@ use tracing::debug;
 /// Implements LibAFL's State trait supporting our fuzzing logic.
 use crate::indexed_corpus::IndexedInMemoryCorpus;
 use crate::{
-    evm::{abi::BoxedABI, presets::ExploitTemplate, types::EVMAddress},
+    evm::{abi::BoxedABI, presets::ExploitTemplate, presets::ReachabilityTemplate, types::EVMAddress},
     generic_vm::{vm_executor::ExecutionResult, vm_state::VMStateT},
     input::{ConciseSerde, VMInputT},
     state_input::StagedVMState,
 };
-
+use crate::evm::presets::{Function, ReachablePair};
+use petgraph::{prelude::*, Graph, Directed};
+use petgraph::algo::floyd_warshall;
 /// Amount of accounts and contracts that can be caller during fuzzing.
 /// We will generate random addresses for these accounts and contracts.
 pub const ACCOUNT_AMT: u8 = 2;
@@ -175,6 +178,35 @@ pub trait HasFavored {
     ) -> &Vec<[u8;4]>;
 }
 
+pub trait HasReachability {
+    /// Variables:
+    /// functions: Vec<Function> ==> a vector of functions to track reachability
+    /// index: HashMap<Function, u8> ==> index[function] = index of the function in the vector (saves some cost)
+    /// reachability_graphs: HashMap<Vec<u8>, Vec<Vec<u8>>> ==> given a representation of subsets of functions, calculate and store the reachability graph
+    fn init_reachability (
+        &mut self,
+        templates: Vec<ReachabilityTemplate>
+    );
+    /// Get the index of function in reachability graph. Return None if not in graph
+    fn get_index (
+        &mut self,
+        current_function: Function
+    ) -> Option<&usize>;
+
+    /// Take intersection with template.functions, and return a vector of 0/1; 0 means no intersection, 1 means intersection
+    fn get_current_vec (
+        &mut self,
+        current_functions: Vec<Function>
+    ) -> Vec<usize>;
+
+    /// Return reachability graph generated from nodes in current_vecs.
+    /// Return None if no graph was generated for these nodes (shouldn't happen if used get_current_vec)
+    fn get_current_reachability_graph (
+        &mut self,
+        current_vec: Vec<usize>
+    ) -> Option<&(HashMap<(NodeIndex, NodeIndex), i32>, HashMap<Function, NodeIndex>)>;
+}
+
 /// The global state of ItyFuzz, containing all the information needed for
 /// fuzzing Implements LibAFL's [`State`] trait and passed to all the fuzzing
 /// components as a reference
@@ -258,6 +290,16 @@ where
     // Allow adding favored contracts
     pub favored_contracts: Vec<EVMAddress>,
 
+    // A vector of functions to track reachability
+    pub functions: Vec<Function>,
+    // Index of the function in the functions vector (saves some cost)
+    pub function_index: HashMap<Function, usize>,
+    // A reachable edge (from node ==> to node)
+    pub reachable_edges: Vec<ReachablePair>,
+
+    // Given a representation of subsets of functions, calculate and store the reachability graph
+    pub reachability_graph: HashMap<Vec<usize>, (HashMap<(NodeIndex, NodeIndex), i32>, HashMap<Function, NodeIndex>)>,
+
     pub sig_to_addr_abi_map: std::collections::HashMap<[u8; 4], (EVMAddress, BoxedABI)>,
 
     pub phantom: std::marker::PhantomData<(VI, Addr)>,
@@ -338,6 +380,10 @@ where
             favored_signatures: Vec::new(),
             sequenced_signatures: Vec::new(),
             favored_contracts: Vec::new(),
+            functions: Vec::new(),
+            function_index: Default::default(),
+            reachable_edges: vec![],
+            reachability_graph: Default::default(),
             sig_to_addr_abi_map: Default::default(),
         }
     }
@@ -895,13 +941,13 @@ where
 }
 
 impl<VI, VS, Loc, Addr, Out, CI> HasFavored for FuzzState<VI, VS, Loc, Addr, Out, CI>
-    where
-        VS: Default + VMStateT,
-        VI: VMInputT<VS, Loc, Addr, CI> + Input,
-        Addr: Serialize + DeserializeOwned + Debug + Clone,
-        Loc: Serialize + DeserializeOwned + Debug + Clone,
-        Out: Serialize + DeserializeOwned + Default + Into<Vec<u8>> + Clone,
-        CI: Serialize + DeserializeOwned + Debug + Clone + ConciseSerde,
+where
+    VS: Default + VMStateT,
+    VI: VMInputT<VS, Loc, Addr, CI> + Input,
+    Addr: Serialize + DeserializeOwned + Debug + Clone,
+    Loc: Serialize + DeserializeOwned + Debug + Clone,
+    Out: Serialize + DeserializeOwned + Default + Into<Vec<u8>> + Clone,
+    CI: Serialize + DeserializeOwned + Debug + Clone + ConciseSerde,
 {
     fn init_favored (
         &mut self,
@@ -948,6 +994,86 @@ impl<VI, VS, Loc, Addr, Out, CI> HasFavored for FuzzState<VI, VS, Loc, Addr, Out
     ) -> &Vec<[u8;4]> { return &self.sequenced_signatures }
 }
 
+impl<VI, VS, Loc, Addr, Out, CI> HasReachability for FuzzState<VI, VS, Loc, Addr, Out, CI>
+where
+    VS: Default + VMStateT,
+    VI: VMInputT<VS, Loc, Addr, CI> + Input,
+    Addr: Serialize + DeserializeOwned + Debug + Clone,
+    Loc: Serialize + DeserializeOwned + Debug + Clone,
+    Out: Serialize + DeserializeOwned + Default + Into<Vec<u8>> + Clone,
+    CI: Serialize + DeserializeOwned + Debug + Clone + ConciseSerde,
+{
+    fn init_reachability(&mut self, templates: Vec<ReachabilityTemplate>) {
+        // Initialize functions to consider
+        for template in templates {
+            self.functions = template.functions;
+            for i in 0..self.functions.len() {
+                self.function_index.insert(self.functions[i].clone(), i)
+            }
+            self.reachable_edges = template.reachable_edges;
+        }
+        // Get all subsets of functions
+        let mut subsets: Vec<Vec<Function>> = vec![];
+        let empty: Vec<Function> = vec![];
+        subsets.push(empty);
+        let mut updated: Vec<Vec<Function>> = vec![];
+        for ele in self.functions {
+            for mut sub in subsets.clone() {
+                sub.push(*ele);
+                updated.push(sub);
+            }
+            subsets.append(&mut updated);
+        }
+        // For each subset, generate a Floyd-Warshall graph
+        for subset in subsets {
+            let current_vec = self.get_current_vec(subset);
+            // node_map[f1] = index of f1 in graph
+            let mut node_map = HashMap::new();
+            let mut graph: Graph<(), (), Directed> = Graph::new();
+            let mut weight_map = HashMap::new();
+            // Create a node for each function in current subset
+            for function in subset{
+                let idx = graph.add_node(());
+                node_map.insert(function, idx);
+            }
+            // Add edges that fit current subset
+            for reachable_edge in self.reachable_edges{
+                // If both ends of this reachable edge are in the subset
+                if subset.contains(&reachable_edge.to) && subset.contains(&reachable_edge.from) {
+                    graph.add_edge(*node_map.get(&reachable_edge.from).unwrap(), *node_map.get(&reachable_edge.to).unwrap(), ());
+                    weight_map.insert((*node_map.get(&reachable_edge.from).unwrap(), *node_map.get(&reachable_edge.to).unwrap()), 0);
+                }
+            }
+
+            let res = floyd_warshall(&graph, |edge| {
+                if let Some(weight) = weight_map.get(&(edge.source(), edge.target())) {
+                    *weight
+                } else {
+                    f32::INFINITY as i32
+                }
+            }).unwrap();
+            self.reachability_graph.insert(current_vec, (res, node_map))
+        }
+    }
+
+    fn get_index(&mut self, current_function: Function) -> Option<&usize> {
+        self.function_index.get(&current_function)
+    }
+
+    fn get_current_vec(&mut self, current_functions: Vec<Function>) -> Vec<usize> {
+        let res: Vec<usize> = vec![0; self.functions.len()];
+        for function in current_functions {
+            if self.function_index.contains_key(&function) {
+                res[self.function_index.get(&function).unwrap()] = 1;
+            }
+        }
+        return res
+    }
+
+    fn get_current_reachability_graph(&mut self, current_vec: Vec<usize>) -> Option<&(HashMap<(NodeIndex, NodeIndex), i32>, HashMap<Function, NodeIndex>)> {
+        self.reachability_graph.get(&current_vec)
+    }
+}
 impl<VI, VS, Loc, Addr, Out, CI> HasPresets for FuzzState<VI, VS, Loc, Addr, Out, CI>
 where
     VS: Default + VMStateT,

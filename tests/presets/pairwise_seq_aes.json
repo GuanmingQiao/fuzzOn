@@ -1,0 +1,291 @@
+[{
+  "functions": [
+    [
+      {
+        "name": "Uniswap_Pool: sync",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xfff6cae9"
+      },
+      {
+        "name": "Uniswap_Pool: skim",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xbc25cf77"
+      },
+      {
+        "name": "Uniswap_Pool: swap",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0x022c0d9f"
+      },
+      {
+        "name": "USDT_Pool: transfer",
+        "contract": "0x55d398326f99059fF775485246999027B3197955",
+        "function": "0xa9059cbb"
+      },
+      {
+        "name": "AES: transfer",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0xa9059cbb"
+      },
+      {
+        "name": "AES: distributeFee",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0x26c4e60d"
+      }
+    ]
+  ],
+  "reachable_edges":
+  [
+    {
+      "from": {
+        "name": "Uniswap_Pool: sync",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xfff6cae9"
+      },
+      "to": {
+        "name": "Uniswap_Pool: skim",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xbc25cf77"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: sync",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xfff6cae9"
+      },
+      "to": {
+        "name": "Uniswap_Pool: swap",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0x022c0d9f"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: sync",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xfff6cae9"
+      },
+      "to": {
+        "name": "USDT_Pool: transfer",
+        "contract": "0x55d398326f99059fF775485246999027B3197955",
+        "function": "0xa9059cbb"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: sync",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xfff6cae9"
+      },
+      "to": {
+        "name": "AES: transfer",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0xa9059cbb"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: sync",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xfff6cae9"
+      },
+      "to": {
+        "name": "AES: distributeFee",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0x26c4e60d"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: skim",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xbc25cf77"
+      },
+      "to": {
+        "name": "Uniswap_Pool: sync",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xfff6cae9"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: skim",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xbc25cf77"
+      },
+      "to": {
+        "name": "Uniswap_Pool: swap",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0x022c0d9f"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: skim",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xbc25cf77"
+      },
+      "to": {
+        "name": "USDT_Pool: transfer",
+        "contract": "0x55d398326f99059fF775485246999027B3197955",
+        "function": "0xa9059cbb"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: skim",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xbc25cf77"
+      },
+      "to": {
+        "name": "AES: transfer",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0xa9059cbb"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: skim",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xbc25cf77"
+      },
+      "to": {
+        "name": "AES: distributeFee",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0x26c4e60d"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: skim",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xbc25cf77"
+      },
+      "to": {
+        "name": "Uniswap_Pool: skim",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xbc25cf77"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: swap",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0x022c0d9f"
+      },
+      "to": {
+        "name": "Uniswap_Pool: swap",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0x022c0d9f"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: swap",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0x022c0d9f"
+      },
+      "to": {
+        "name": "Uniswap_Pool: sync",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xfff6cae9"
+      }
+    },
+    {
+      "from": {
+        "name": "Uniswap_Pool: swap",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0x022c0d9f"
+      },
+      "to": {
+        "name": "USDT_Pool: transfer",
+        "contract": "0x55d398326f99059fF775485246999027B3197955",
+        "function": "0xa9059cbb"
+      }
+    },
+    {
+      "from": {
+        "name": "USDT_Pool: transfer",
+        "contract": "0x55d398326f99059fF775485246999027B3197955",
+        "function": "0xa9059cbb"
+      },
+      "to": {
+        "name": "USDT_Pool: transfer",
+        "contract": "0x55d398326f99059fF775485246999027B3197955",
+        "function": "0xa9059cbb"
+      }
+    },
+    {
+      "from": {
+        "name": "USDT_Pool: transfer",
+        "contract": "0x55d398326f99059fF775485246999027B3197955",
+        "function": "0xa9059cbb"
+      },
+      "to": {
+        "name": "Uniswap_Pool: skim",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xbc25cf77"
+      }
+    },
+    {
+      "from": {
+        "name": "AES: transfer",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0xa9059cbb"
+      },
+      "to": {
+        "name": "Uniswap_Pool: skim",
+        "contract": "0x40eD17221b3B2D8455F4F1a05CAc6b77c5f707e3",
+        "function": "0xbc25cf77"
+      }
+    },
+    {
+      "from": {
+        "name": "AES: transfer",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0xa9059cbb"
+      },
+      "to": {
+        "name": "AES: distributeFee",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0x26c4e60d"
+      }
+    },
+    {
+      "from": {
+        "name": "AES: transfer",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0xa9059cbb"
+      },
+      "to": {
+        "name": "AES: transfer",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0xa9059cbb"
+      }
+    },
+    {
+      "from": {
+        "name": "AES: distributeFee",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0x26c4e60d"
+      },
+      "to": {
+        "name": "AES: distributeFee",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0x26c4e60d"
+      }
+    },
+    {
+      "from": {
+        "name": "AES: distributeFee",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0x26c4e60d"
+      },
+      "to": {
+        "name": "AES: transfer",
+        "contract": "0xdDc0CFF76bcC0ee14c3e73aF630C029fe020F907",
+        "function": "0xa9059cbb"
+      }
+    }
+  ]
+}]

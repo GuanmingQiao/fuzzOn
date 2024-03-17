@@ -30,7 +30,7 @@ where
     ) -> Vec<EVMInput>;
 }
 
-#[derive(Debug, PartialEq, Clone, serde::Serialize)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize, Hash, Eq)]
 pub struct FunctionSig {
     pub value: [u8; 4],
 }
@@ -60,5 +60,32 @@ impl<'de> Deserialize<'de> for FunctionSig {
         let mut function_sig = [0u8; 4];
         function_sig.copy_from_slice(&hex::decode(&s[2..]).unwrap()[..4]);
         Ok(FunctionSig { value: function_sig })
+    }
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize, Clone, Hash, Eq, PartialEq)]
+pub struct Function {
+    pub function_name: String,
+    pub function_sig: FunctionSig,
+    pub contract: EVMAddress
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize, Clone, Hash)]
+pub struct ReachablePair {
+    pub from: Function,
+    pub to: Function,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
+pub struct ReachabilityTemplate {
+    pub functions: Vec<Function>,
+    pub reachable_edges: Vec<ReachablePair>
+}
+
+impl ReachabilityTemplate {
+    pub fn from_filename(filename: String) -> Vec<Self> {
+        let file = File::open(filename).unwrap();
+        let reachability_templates: Vec<Self> = serde_json::from_reader(file).unwrap();
+        reachability_templates
     }
 }
